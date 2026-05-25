@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Lucca\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\h--Muvin-frontend\\\\8e3441fb-ec17-4f04-913b-eb3cbba67e64\\\\tasks\\\\bwu430pt6.output\")"
+    ]
+  }
+}

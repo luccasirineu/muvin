@@ -1,0 +1,55 @@
+## Build outputs
+bin/
+obj/
+
+## NuGet packages
+*.nupkg
+*.snupkg
+.nuget/packages/
+packages/
+nuget.config
+
+## .NET user-specific files
+*.user
+*.suo
+.vs/
+*.userosscache
+*.sln.docstates
+
+## Rider / JetBrains IDEs
+.idea/
+*.iml
+*.iws
+
+## Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+
+
+# Migrations/
+
+## Logs
+*.log
+logs/
+
+## Environment variables 
+.env
+.env.*
+!.env.example
+
+## App settings with credentials (use appsettings.Development.example.json como template)
+appsettings.*.json
+!appsettings.Development.example.json
+
+## Docker
+docker-compose.override.yml
+
+## OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Publish output
+publish/
+
+.claude

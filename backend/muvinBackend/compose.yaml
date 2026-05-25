@@ -1,0 +1,64 @@
+services:
+  muvinbackend:
+    image: muvinbackend
+    build:
+      context: .
+      dockerfile: muvinBackend/Dockerfile
+    container_name: muvin-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Email__Usuario=${EMAIL_USUARIO}
+      - Email__Senha=${EMAIL_SENHA}
+      - DigitalOcean__SpacesAccessKey=${DO_ACCESS_KEY}
+      - DigitalOcean__SpacesSecretKey=${DO_SECRET_KEY}
+      - CorretorSeed__Senha=${SEED_SENHA}
+      - Cors__Origins__0=${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${BACKEND_PORT:-5000}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - muvin-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../frontend/muvin-frontend
+      dockerfile: Dockerfile
+    container_name: muvin-frontend
+    ports:
+      - "3001:80"
+    networks:
+      - muvin-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: muvin-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - muvin-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - muvin-network
+    restart: unless-stopped
+    
+volumes:
+  muvin-pgdata:
+
+networks:
+  muvin-network:
+    driver: bridge
