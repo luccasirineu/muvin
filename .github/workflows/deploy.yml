@@ -33,6 +33,7 @@ jobs:
         working-directory: backend/muvinBackend
         run: dotnet build --configuration Release
   deploy:
+    needs: validate
     name: SSH Deploy
     runs-on: ubuntu-latest
 
