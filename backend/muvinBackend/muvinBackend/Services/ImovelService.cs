@@ -203,19 +203,21 @@ public class ImovelService : IImovelService
 
         ImovelMapper.UpdateEntity(imovel, dto);
 
-        imovel.FotosImovel.Clear();
-        foreach (var url in dto.UrlFotos)
+        _context.FotoImoveis.RemoveRange(imovel.FotosImovel.ToList());
+
+        var newPhotos = dto.UrlFotos.Select(url => new FotoImovel
         {
-            imovel.FotosImovel.Add(new FotoImovel
-            {
-                Uuid = Guid.NewGuid(),
-                UrlFoto = url,
-                EnvioTimestamp = DateTime.UtcNow,
-                ImovelId = imovel.Uuid
-            });
-        }
+            Uuid = Guid.NewGuid(),
+            UrlFoto = url,
+            EnvioTimestamp = DateTime.UtcNow,
+            ImovelId = imovel.Uuid
+        }).ToList();
+
+        await _context.FotoImoveis.AddRangeAsync(newPhotos);
 
         await _context.SaveChangesAsync();
+
+        imovel.FotosImovel = newPhotos;
         return ImovelMapper.ToResponse(imovel);
     }
 
