@@ -42,7 +42,7 @@ export function HomeScreen({ setRoute, openProperty, properties, onSearch, corre
             <em>do jeito certo</em>.
           </h1>
           <p className="lede">
-            Há {BROKER.yearsActive} anos ajudando famílias e investidores a encontrar — e negociar —
+            Há {BROKER.yearsActive} anos ajudando famílias e investidores a encontrar e negociar
             apartamentos, casas e salas comerciais nas regiões centro e sul de São Paulo.
             Atendimento direto, sem intermediários.
           </p>
