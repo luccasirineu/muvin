@@ -46,6 +46,26 @@ const BLANK: Property = {
   features: [],
 };
 
+function formatCodInterno(input: string): string {
+  const upper = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let letters = '';
+  let digits = '';
+  for (const ch of upper) {
+    if (letters.length < 2 && /[A-Z]/.test(ch)) letters += ch;
+    else if (digits.length < 4 && /[0-9]/.test(ch)) digits += ch;
+  }
+  return digits ? `${letters}-${digits}` : letters;
+}
+
+function formatCep(input: string): string {
+  const digits = input.replace(/\D/g, '').slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
+function initCurrencyDisplay(value: number): string {
+  return value > 0 ? value.toLocaleString('pt-BR') : '';
+}
+
 export function AdminPropertyEdit({ setRoute, properties, editingId, saveProperty }: AdminPropertyEditProps) {
   const existing = editingId ? properties.find((p) => p.id === editingId) : null;
   const uniquePhotos = existing?.photos.filter(
@@ -54,6 +74,9 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
   const [draft, setDraft] = useState<Property>(
     existing ? { ...existing, photos: uniquePhotos } : { ...BLANK }
   );
+  const [priceDisplay, setPriceDisplay] = useState(() => initCurrencyDisplay(draft.price));
+  const [condoDisplay, setCondoDisplay] = useState(() => initCurrencyDisplay(draft.condo));
+  const [iptuDisplay, setIptuDisplay] = useState(() => initCurrencyDisplay(draft.iptu));
   const [savedFlash, setSavedFlash] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [uploadError, setUploadError] = useState('');
@@ -64,6 +87,17 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
   }
   function upNum(field: keyof Property, value: string) {
     up(field as 'price', value === '' ? 0 : Number(value));
+  }
+
+  function handleCurrencyChange(
+    field: 'price' | 'condo' | 'iptu',
+    rawValue: string,
+    setDisplay: (s: string) => void,
+  ) {
+    const digits = rawValue.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setDisplay(digits ? num.toLocaleString('pt-BR') : '');
+    up(field, num);
   }
 
   async function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -130,7 +164,12 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
           <h3 className="h3-serif">Informações principais</h3>
           <div className="form-grid two-col">
             <Field label="Código interno *">
-              <input value={draft.code} onChange={(e) => up('code', e.target.value)} placeholder="LI-2411" />
+              <input
+                value={draft.code}
+                onChange={(e) => up('code', formatCodInterno(e.target.value))}
+                placeholder="LI-2411"
+                maxLength={7}
+              />
             </Field>
             <Field label="Status">
               <select value={draft.status} onChange={(e) => up('status', e.target.value as PropertyStatus)}>
@@ -173,13 +212,31 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
           <h3 className="h3-serif">Valores</h3>
           <div className="form-grid two-col">
             <Field label="Preço (R$) *">
-              <input type="number" value={draft.price || ''} onChange={(e) => upNum('price', e.target.value)} placeholder="1500000" />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={priceDisplay}
+                onChange={(e) => handleCurrencyChange('price', e.target.value, setPriceDisplay)}
+                placeholder="1.500.000"
+              />
             </Field>
             <Field label="Condomínio mensal (R$)">
-              <input type="number" value={draft.condo || ''} onChange={(e) => upNum('condo', e.target.value)} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={condoDisplay}
+                onChange={(e) => handleCurrencyChange('condo', e.target.value, setCondoDisplay)}
+                placeholder="0"
+              />
             </Field>
             <Field label="IPTU mensal (R$)">
-              <input type="number" value={draft.iptu || ''} onChange={(e) => upNum('iptu', e.target.value)} placeholder="0" />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={iptuDisplay}
+                onChange={(e) => handleCurrencyChange('iptu', e.target.value, setIptuDisplay)}
+                placeholder="0"
+              />
             </Field>
           </div>
         </div>
@@ -188,19 +245,19 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
           <h3 className="h3-serif">Características</h3>
           <div className="form-grid four-col">
             <Field label="Dormitórios">
-              <input type="number" value={draft.bedrooms || ''} onChange={(e) => upNum('bedrooms', e.target.value)} />
+              <input type="number" min={0} value={draft.bedrooms || ''} onChange={(e) => upNum('bedrooms', e.target.value)} />
             </Field>
             <Field label="Suítes">
-              <input type="number" value={draft.suites || ''} onChange={(e) => upNum('suites', e.target.value)} />
+              <input type="number" min={0} value={draft.suites} onChange={(e) => upNum('suites', e.target.value)} />
             </Field>
             <Field label="Banheiros">
-              <input type="number" value={draft.bathrooms || ''} onChange={(e) => upNum('bathrooms', e.target.value)} />
+              <input type="number" min={0} value={draft.bathrooms || ''} onChange={(e) => upNum('bathrooms', e.target.value)} />
             </Field>
             <Field label="Vagas">
-              <input type="number" value={draft.parking || ''} onChange={(e) => upNum('parking', e.target.value)} />
+              <input type="number" min={0} value={draft.parking || ''} onChange={(e) => upNum('parking', e.target.value)} />
             </Field>
             <Field label="Área útil (m²)">
-              <input type="number" value={draft.area || ''} onChange={(e) => upNum('area', e.target.value)} />
+              <input type="number" min={0} value={draft.area || ''} onChange={(e) => upNum('area', e.target.value)} />
             </Field>
           </div>
         </div>
@@ -221,7 +278,13 @@ export function AdminPropertyEdit({ setRoute, properties, editingId, savePropert
               <input value={draft.state} onChange={(e) => up('state', e.target.value)} maxLength={2} />
             </Field>
             <Field label="CEP">
-              <input value={draft.zip} onChange={(e) => up('zip', e.target.value)} placeholder="00000-000" />
+              <input
+                value={draft.zip}
+                onChange={(e) => up('zip', formatCep(e.target.value))}
+                placeholder="00000-000"
+                maxLength={9}
+                inputMode="numeric"
+              />
             </Field>
           </div>
         </div>
