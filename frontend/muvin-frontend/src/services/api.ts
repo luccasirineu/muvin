@@ -2,37 +2,34 @@ import type { Property, Lead, LeadStatus, Corretor } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// ─── Auth token ────────────────────────────────────────────────────────────
+// ─── Auth state ────────────────────────────────────────────────────────────
 
-export function getToken(): string | null {
-  return localStorage.getItem('muvin_token');
-}
+let _authenticated = false;
 
-export function setToken(token: string): void {
-  localStorage.setItem('muvin_token', token);
-}
-
-export function clearToken(): void {
-  localStorage.removeItem('muvin_token');
-}
-
-export function isAuthenticated(): boolean {
-  return !!getToken();
+export function setAuthState(v: boolean): void {
+  _authenticated = v;
 }
 
 // ─── HTTP helper ───────────────────────────────────────────────────────────
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<unknown> {
-  const token = getToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: { ...headers, ...(options.headers as Record<string, string> ?? {}) },
   });
 
   if (res.status === 204) return null;
+
+  if (res.status === 401) {
+    if (_authenticated) {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`HTTP ${res.status}: ${text}`);
@@ -282,10 +279,9 @@ export async function uploadFoto(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const token = getToken();
   const res = await fetch(`${BASE_URL}/api/upload/foto`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
     body: formData,
   });
 
@@ -306,10 +302,18 @@ export async function esqueciSenha(email: string, ultimosDigitosCpf: string): Pr
   });
 }
 
-export async function login(email: string, senha: string): Promise<{ token: string; nomeCompleto: string }> {
+export async function login(email: string, senha: string): Promise<{ nomeCompleto: string }> {
   const d = await apiFetch('/api/corretor/login', {
     method: 'POST',
     body: JSON.stringify({ email, senha }),
-  }) as { token: string; corretor: { nomeCompleto: string } };
-  return { token: d.token, nomeCompleto: d.corretor.nomeCompleto };
+  }) as { corretor: { nomeCompleto: string } };
+  return { nomeCompleto: d.corretor.nomeCompleto };
+}
+
+export async function logout(): Promise<void> {
+  await apiFetch('/api/corretor/logout', { method: 'POST' });
+}
+
+export async function checkAuth(): Promise<void> {
+  await apiFetch('/api/corretor/check');
 }

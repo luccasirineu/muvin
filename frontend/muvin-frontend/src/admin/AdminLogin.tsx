@@ -4,7 +4,7 @@ import { Logo } from '../components/Logo';
 import { EsqueciSenhaModal } from '../components/EsqueciSenhaModal';
 
 interface AdminLoginProps {
-  onLogin: (token: string) => void;
+  onLogin: () => void;
 }
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
@@ -19,8 +19,8 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     setError('');
     setLoading(true);
     try {
-      const { token } = await login(email, senha);
-      onLogin(token);
+      await login(email, senha);
+      onLogin();
     } catch {
       setError('E-mail ou senha incorretos.');
     } finally {
