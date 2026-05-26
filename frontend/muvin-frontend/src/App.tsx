@@ -33,7 +33,7 @@ export default function App() {
   const [pendingFilter, setPendingFilter] = useState<QuickSearch | null>(null);
   const [showLgpd, setShowLgpd] = useState(false);
   const [dark, setDark] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(api.isAuthenticated);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -53,13 +53,29 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    function handleExpired() {
+      api.setAuthState(false);
+      setIsAuthenticated(false);
+      setLeads([]);
+      setRoute('home');
+    }
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, []);
+
+  useEffect(() => {
     Promise.all([
       api.getProperties(),
       api.getPerfil().catch(() => null),
-    ]).then(([ps, c]) => {
+      api.checkAuth().then(() => true).catch(() => false),
+    ]).then(([ps, c, authenticated]) => {
       setProperties(ps);
       if (ps.length > 0) setDetailId(ps[0].id);
       setCorretor(c);
+      if (authenticated) {
+        api.setAuthState(true);
+        setIsAuthenticated(true);
+      }
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -134,14 +150,15 @@ export default function App() {
     setRoute(r);
   }
 
-  function handleLogin(token: string) {
-    api.setToken(token);
+  function handleLogin() {
+    api.setAuthState(true);
     setIsAuthenticated(true);
     api.getLeads().then(setLeads).catch(console.error);
   }
 
-  function handleLogout() {
-    api.clearToken();
+  async function handleLogout() {
+    await api.logout().catch(() => {});
+    api.setAuthState(false);
     setIsAuthenticated(false);
     setLeads([]);
     setRoute('home');

@@ -21,8 +21,29 @@ public class CorretorController : ControllerBase
     public async Task<IActionResult> Login([FromBody] CorretorLoginDto dto)
     {
         var result = await _service.LoginAsync(dto);
-        return result is null ? Unauthorized() : Ok(result);
+        if (result is null) return Unauthorized();
+
+        Response.Cookies.Append("auth_token", result.Token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Strict,
+            Expires = new DateTimeOffset(result.ExpiracaoUtc, TimeSpan.Zero)
+        });
+
+        return Ok(new { corretor = result.Corretor });
     }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("auth_token");
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpGet("check")]
+    public IActionResult Check() => Ok();
 
     [HttpGet("perfil")]
     public async Task<IActionResult> GetPerfil()
