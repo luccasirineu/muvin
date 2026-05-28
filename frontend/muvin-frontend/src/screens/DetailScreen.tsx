@@ -3,6 +3,7 @@ import type { Property, Lead, Corretor } from '../types';
 import { BROKER } from '../broker';
 import { brl, phoneRaw } from '../utils';
 import { PhotoPlaceholder } from '../components/PhotoPlaceholder';
+import { MapEmbed } from '../components/MapEmbed';
 import { PropertyCard } from '../components/PropertyCard';
 import { WAIcon } from '../components/WAIcon';
 
@@ -133,8 +134,7 @@ export function DetailScreen({ propertyId, setRoute, openProperty, properties, o
           <div className="detail-map">
             <h3 className="h3-serif">Localização</h3>
             <div className="map-stub">
-              <PhotoPlaceholder label={`mapa · ${p.neighborhood}`} tone="cool" aspect="16/9" style={{ height: '100%' }} />
-              <div className="map-pin">📍 {p.address}</div>
+              <MapEmbed address={p.address} neighborhood={p.neighborhood} city={p.city} state={p.state} />
             </div>
           </div>
         </div>
