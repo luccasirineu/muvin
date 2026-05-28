@@ -316,13 +316,8 @@ html[data-theme="dark"] .prop-card-badge { background: rgba(19,18,15,.88); }
 .cost-item { display: flex; flex-direction: column; gap: 4px; padding: 16px 0; }
 .cost-item span { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .cost-item strong { font-size: 22px; font-weight: 500; font-family: var(--font-serif); }
-.map-stub { position: relative; height: 320px; border-radius: var(--radius); overflow: hidden; }
-.map-pin {
-  position: absolute; left: 24px; top: 24px;
-  background: rgba(250,249,245,.92); padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--border);
-  font-size: 13px; color: var(--fg-soft);
-}
-html[data-theme="dark"] .map-pin { background: rgba(19,18,15,.88); }
+.map-stub { position: relative; height: 320px; border-radius: var(--radius); overflow: hidden; background: var(--bg-soft); }
+.map-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; }
 
 /* Sidebar detail */
 .detail-side { position: relative; }
