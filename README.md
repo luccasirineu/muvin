@@ -65,6 +65,24 @@ Plataforma imobiliária completa para gestão de imóveis, corretores e leads. O
 
 ---
 
+### Painel administrativo (`/admin`)
+
+| Dashboard | Portfólio de imóveis |
+|---|---|
+| ![Dashboard](docs/screenshots/painel.png) | ![Imóveis](docs/screenshots/imoveisAdmin.png) |
+
+**Cadastro de imóvel**
+
+| Informações principais e valores | Características, endereço e fotos |
+|---|---|
+| ![Novo imóvel — parte 1](docs/screenshots/criarImovel.png) | ![Novo imóvel — parte 2](docs/screenshots/criarImovel2.png) |
+
+| Leads recebidos | Perfil do corretor |
+|---|---|
+| ![Leads](docs/screenshots/leads.png) | ![Perfil](docs/screenshots/perfil.png) |
+
+---
+
 ## Funcionalidades
 
 ### Site público
