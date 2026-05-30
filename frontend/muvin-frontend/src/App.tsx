@@ -174,7 +174,10 @@ export default function App() {
       case 'contact':     navigate('/contato');     break;
       case 'privacy':     navigate('/privacidade'); break;
       case 'terms':       navigate('/termos');      break;
-      default:            setAdminRoute(r);         break;
+      default:
+        setAdminRoute(r);
+        if (!location.pathname.startsWith('/admin')) navigate('/admin');
+        break;
     }
   }
 
