@@ -6,6 +6,8 @@ Plataforma imobiliária completa para gestão de imóveis, corretores e leads. O
 
 ## Sumário
 
+- [Screenshots](#screenshots)
+- [Funcionalidades](#funcionalidades)
 - [Requisitos](#requisitos)
 - [Rodando localmente](#rodando-localmente)
 - [Rodando com Docker](#rodando-com-docker)
@@ -14,6 +16,74 @@ Plataforma imobiliária completa para gestão de imóveis, corretores e leads. O
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [API Reference](#api-reference)
 - [Deploy](#deploy)
+
+---
+
+## Screenshots
+
+### Início (`/`)
+
+| Hero — busca e imóvel em destaque | Estatísticas e destaques da semana |
+|---|---|
+| ![Hero](docs/screenshots/home1.png) | ![Destaques](docs/screenshots/home2.png) |
+
+| Bairros e processo de atendimento | Como funciona e CTA |
+|---|---|
+| ![Bairros](docs/screenshots/home3.png) | ![Processo](docs/screenshots/home4.png) |
+
+![CTA e rodapé](docs/screenshots/home5.png)
+
+---
+
+### Imóveis (`/imoveis`)
+
+![Listagem de imóveis com filtros](docs/screenshots/imoveis.png)
+
+---
+
+### Detalhe do imóvel (`/imovel/:id`)
+
+| Galeria e cabeçalho | Especificações, mapa e formulário |
+|---|---|
+| ![Galeria](docs/screenshots/imovel1.png) | ![Detalhe completo](docs/screenshots/imovel2.png) |
+
+---
+
+### Sobre (`/sobre`)
+
+| Apresentação do corretor | Credenciais e depoimentos |
+|---|---|
+| ![Sobre](docs/screenshots/sobre1.png) | ![Credenciais](docs/screenshots/sobre2.png) |
+
+![CTA final](docs/screenshots/sobre3.png)
+
+---
+
+### Contato (`/contato`)
+
+![Formulário de contato](docs/screenshots/contato.png)
+
+---
+
+## Funcionalidades
+
+### Site público
+- Roteamento com URLs limpas via **React Router** (`/imoveis`, `/imovel/:id`, `/sobre`, `/contato`) com suporte nativo ao botão voltar do browser e links compartilháveis
+- Listagem de imóveis com filtros por tipo, finalidade, bairro e faixa de preço
+- Página de detalhe com galeria de fotos, especificações e custos mensais
+- Mapa de localização integrado via **OpenStreetMap** (sem API key) com geocodificação automática pelo Nominatim
+- Formulário de contato (lead) por imóvel
+- Botão de contato direto via WhatsApp
+- Imóveis em destaque na página inicial
+- Tema claro/escuro
+
+### Painel administrativo (`/admin`)
+- Login com autenticação JWT via cookie HTTP-only
+- Dashboard com estatísticas: imóveis disponíveis, leads novos, negociações em andamento
+- Cadastro, edição e exclusão de imóveis com upload de fotos
+- Gestão de leads com funil de vendas (Novo → Em contato → Negociação → Fechado)
+- Edição do perfil do corretor (foto, CRECI, celular)
+- Recuperação de senha por e-mail
 
 ---
 
@@ -171,7 +241,9 @@ O frontend estará disponível em: `http://localhost:5173`
 
 | Serviço | URL | O que você deve ver |
 |---|---|---|
-| Frontend | `http://localhost:5173` | Página inicial do site |
+| Home | `http://localhost:5173/` | Página inicial do site |
+| Listagem | `http://localhost:5173/imoveis` | Lista de imóveis |
+| Detalhe | `http://localhost:5173/imovel/:uuid` | Detalhe de um imóvel |
 | Painel admin | `http://localhost:5173/admin` | Tela de login |
 | API (health) | `http://localhost:5000/api/imoveis` | JSON com lista de imóveis (vazia inicialmente) |
 
@@ -259,8 +331,9 @@ docker compose down
 # Parar e remover volumes (apaga os dados do banco)
 docker compose down -v
 
-# Reconstruir apenas um serviço
-docker compose up --build muvinbackend
+# Reconstruir um serviço após mudanças no código
+docker compose up --build frontend -d
+docker compose up --build muvinbackend -d
 ```
 
 ---
@@ -308,12 +381,18 @@ docker compose up --build muvinbackend
                     │   REST API      │
                     └────────┬────────┘
                              │
-               ┌─────────────┼──────────────┐
-               │             │              │
-     ┌─────────▼──────┐  ┌───▼──────┐  ┌───▼──────────────┐
-     │  PostgreSQL 17  │  │  Gmail   │  │ DigitalOcean     │
-     │   (dados)       │  │  SMTP    │  │ Spaces (fotos)   │
-     └────────────────┘  └──────────┘  └──────────────────┘
+          ┌──────────────────┼──────────────────┐
+          │                  │                  │
+┌─────────▼──────┐   ┌───────▼──────┐  ┌───────▼──────────┐
+│  PostgreSQL 17  │   │  Gmail SMTP  │  │ DigitalOcean     │
+│   (dados)       │   │  (e-mails)   │  │ Spaces (fotos)   │
+└────────────────┘   └──────────────┘  └──────────────────┘
+
+         Geocodificação de endereços (client-side, sem API key):
+                    ┌────────────────────┐
+                    │ Nominatim / OpenSM │
+                    │  (openstreetmap)   │
+                    └────────────────────┘
 ```
 
 ### Stack tecnológica
@@ -321,6 +400,7 @@ docker compose up --build muvinbackend
 | Camada | Tecnologia | Versão |
 |---|---|---|
 | Frontend | React + TypeScript | 19.x / 6.x |
+| Roteamento | React Router | 7.x |
 | Build tool | Vite | 8.x |
 | Backend | ASP.NET Core | 10.0 |
 | ORM | Entity Framework Core | 10.0 |
@@ -329,6 +409,7 @@ docker compose up --build muvinbackend
 | Hash de senha | BCrypt.Net | 4.x |
 | Armazenamento | DigitalOcean Spaces (S3-compatible) | — |
 | E-mail | Gmail SMTP | — |
+| Mapas | OpenStreetMap + Nominatim | — |
 | Containerização | Docker + Docker Compose | 26+ |
 | Servidor web (prod) | Nginx | Alpine |
 
@@ -340,41 +421,48 @@ docker compose up --build muvinbackend
 Muvin/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # CI/CD: build + deploy no Droplet
+│       └── deploy.yml              # CI/CD: build + deploy no Droplet
+│
+├── docs/
+│   └── screenshots/                # Prints do projeto para o README
 │
 ├── backend/
 │   └── muvinBackend/
-│       ├── muvinBackend/        # Projeto ASP.NET Core
-│       │   ├── Controllers/     # Endpoints da API
-│       │   ├── Data/            # DbContext e Seeder
-│       │   ├── DTOs/            # Objetos de transferência de dados
-│       │   ├── Enums/           # Enumerações de domínio
-│       │   ├── Interfaces/      # Contratos de serviço
-│       │   ├── Migrations/      # Histórico de migrations do EF Core
-│       │   ├── Models/          # Entidades do banco
-│       │   ├── Services/        # Lógica de negócio
-│       │   ├── Program.cs       # Entry point e configuração da aplicação
+│       ├── muvinBackend/           # Projeto ASP.NET Core
+│       │   ├── Controllers/        # Endpoints da API
+│       │   ├── Data/               # DbContext e Seeder
+│       │   ├── DTOs/               # Objetos de transferência de dados
+│       │   ├── Enums/              # Enumerações de domínio
+│       │   ├── Interfaces/         # Contratos de serviço
+│       │   ├── Migrations/         # Histórico de migrations do EF Core
+│       │   ├── Models/             # Entidades do banco
+│       │   ├── Services/           # Lógica de negócio
+│       │   ├── Program.cs          # Entry point e configuração da aplicação
 │       │   ├── appsettings.json
 │       │   └── appsettings.Development.json  # (não commitado)
-│       ├── .env                 # (não commitado)
-│       ├── .env.example         # Template de variáveis
-│       └── compose.yaml         # Docker Compose
+│       ├── .env                    # (não commitado)
+│       ├── .env.example            # Template de variáveis
+│       └── compose.yaml            # Docker Compose
 │
 ├── frontend/
 │   └── muvin-frontend/
 │       ├── src/
-│       │   ├── admin/           # Painel administrativo
-│       │   ├── components/      # Componentes reutilizáveis
-│       │   ├── screens/         # Páginas públicas
+│       │   ├── admin/              # Painel administrativo
+│       │   ├── components/
+│       │   │   ├── MapEmbed.tsx    # Mapa OpenStreetMap com geocodificação
+│       │   │   └── ...             # Demais componentes reutilizáveis
+│       │   ├── screens/
+│       │   │   ├── DetailScreen.tsx  # Detalhe do imóvel (com mapa)
+│       │   │   └── ...
 │       │   ├── services/
-│       │   │   └── api.ts       # Cliente HTTP centralizado
-│       │   ├── types.ts         # Interfaces TypeScript
-│       │   ├── App.tsx          # Roteamento principal
-│       │   └── index.css        # Design tokens / variáveis CSS
-│       ├── vite.config.ts       # Config do Vite + proxy
+│       │   │   └── api.ts          # Cliente HTTP centralizado
+│       │   ├── types.ts            # Interfaces TypeScript
+│       │   ├── App.tsx             # Roteamento principal
+│       │   └── index.css           # Design tokens / variáveis CSS
+│       ├── vite.config.ts          # Config do Vite + proxy
 │       └── package.json
 │
-└── nginx-host.conf              # Config Nginx para o servidor de produção
+└── nginx-host.conf                 # Config Nginx para o servidor de produção
 ```
 
 ---
@@ -487,6 +575,6 @@ docker compose up --build -d
 ## Contribuindo
 
 1. Crie uma branch a partir de `main`: `git checkout -b feature/nome-da-feature`
-2. Faça suas alterações e commit
+2. Faça suas alterações e commit a partir da **raiz do repositório** (`H:\Muvin`)
 3. Abra um Pull Request para `main`
 4. O pipeline de validação (build frontend + build backend) precisa passar antes do merge
