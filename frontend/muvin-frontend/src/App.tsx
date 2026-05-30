@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Routes, Route, useParams } from 'react-router-dom';
 import type { Property, Lead, LeadStatus, QuickSearch, Corretor } from './types';
 import * as api from './services/api';
 import { Nav } from './components/Nav';
@@ -21,10 +22,26 @@ import { AdminLeads } from './admin/AdminLeads';
 import { AdminPerfil } from './admin/AdminPerfil';
 
 type LeadPayload = Omit<Lead, 'id' | 'receivedAt' | 'status'>;
+type DetailRouteWrapperProps = Omit<Parameters<typeof DetailScreen>[0], 'propertyId'>;
+
+function DetailRouteWrapper(props: DetailRouteWrapperProps) {
+  const { id } = useParams<{ id: string }>();
+  return <DetailScreen propertyId={id ?? ''} {...props} />;
+}
+
+function pathnameToRoute(pathname: string): string {
+  if (pathname === '/') return 'home';
+  if (pathname.startsWith('/imoveis')) return 'list';
+  if (pathname.startsWith('/imovel')) return 'detail';
+  if (pathname.startsWith('/sobre')) return 'about';
+  if (pathname.startsWith('/contato')) return 'contact';
+  if (pathname.startsWith('/privacidade')) return 'privacy';
+  if (pathname.startsWith('/termos')) return 'terms';
+  return 'home';
+}
 
 export default function App() {
-  const [route, setRoute] = useState('home');
-  const [detailId, setDetailId] = useState('');
+  const [adminRoute, setAdminRoute] = useState('admin-dashboard');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -35,13 +52,18 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+  const currentRoute = pathnameToRoute(location.pathname);
+
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   }, [dark]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [route, detailId]);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -57,11 +79,11 @@ export default function App() {
       api.setAuthState(false);
       setIsAuthenticated(false);
       setLeads([]);
-      setRoute('home');
+      navigate('/');
     }
     window.addEventListener('auth:expired', handleExpired);
     return () => window.removeEventListener('auth:expired', handleExpired);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     Promise.all([
@@ -70,7 +92,6 @@ export default function App() {
       api.checkAuth().then(() => true).catch(() => false),
     ]).then(([ps, c, authenticated]) => {
       setProperties(ps);
-      if (ps.length > 0) setDetailId(ps[0].id);
       setCorretor(c);
       if (authenticated) {
         api.setAuthState(true);
@@ -87,8 +108,7 @@ export default function App() {
   }, [isAuthenticated]);
 
   function openProperty(id: string) {
-    setDetailId(id);
-    setRoute('detail');
+    navigate(`/imovel/${id}`);
   }
 
   async function onLeadSubmit(payload: LeadPayload) {
@@ -115,7 +135,7 @@ export default function App() {
         const created = await api.createProperty(draft);
         setProperties((ps) => [created, ...ps]);
       }
-      setRoute('admin-list');
+      setAdminRoute('admin-list');
     } catch (err) {
       console.error('Erro ao salvar imóvel:', err);
       alert('Erro ao salvar imóvel. Verifique os dados e tente novamente.');
@@ -143,17 +163,26 @@ export default function App() {
 
   function handleSearch(filter: QuickSearch) {
     setPendingFilter(filter);
+    navigate('/imoveis');
   }
 
   function navigateTo(r: string) {
-    if (r === 'list') setPendingFilter(null);
-    setRoute(r);
+    switch (r) {
+      case 'home':        navigate('/');            break;
+      case 'list':        setPendingFilter(null); navigate('/imoveis'); break;
+      case 'about':       navigate('/sobre');       break;
+      case 'contact':     navigate('/contato');     break;
+      case 'privacy':     navigate('/privacidade'); break;
+      case 'terms':       navigate('/termos');      break;
+      default:            setAdminRoute(r);         break;
+    }
   }
 
   function handleLogin() {
     api.setAuthState(true);
     setIsAuthenticated(true);
     api.getLeads().then(setLeads).catch(console.error);
+    setAdminRoute('admin-dashboard');
   }
 
   async function handleLogout() {
@@ -161,10 +190,8 @@ export default function App() {
     api.setAuthState(false);
     setIsAuthenticated(false);
     setLeads([]);
-    setRoute('home');
+    navigate('/');
   }
-
-  const isAdmin = route.startsWith('admin');
 
   if (loading) {
     return (
@@ -176,64 +203,42 @@ export default function App() {
 
   return (
     <>
-      {!isAdmin && <Nav route={route} setRoute={navigateTo} corretor={corretor} />}
+      {!isAdmin && <Nav route={currentRoute} setRoute={navigateTo} corretor={corretor} />}
 
-      {route === 'home' && (
-        <HomeScreen setRoute={navigateTo} openProperty={openProperty} properties={properties} onSearch={handleSearch} corretor={corretor} />
-      )}
-      {route === 'list' && (
-        <ListScreen openProperty={openProperty} properties={properties} initialFilter={pendingFilter} />
-      )}
-      {route === 'detail' && detailId && (
-        <DetailScreen
-          propertyId={detailId}
-          setRoute={navigateTo}
-          openProperty={openProperty}
-          properties={properties}
-          onLeadSubmit={onLeadSubmit}
-          corretor={corretor}
-        />
-      )}
-      {route === 'about' && <AboutScreen setRoute={navigateTo} corretor={corretor} />}
-      {route === 'contact' && <ContactScreen onLeadSubmit={onLeadSubmit} corretor={corretor} />}
-      {route === 'privacy' && <PrivacyScreen setRoute={navigateTo} />}
-      {route === 'terms' && <TermsScreen setRoute={navigateTo} />}
-
-      {isAdmin && !isAuthenticated && <AdminLogin onLogin={handleLogin} />}
-
-      {isAdmin && isAuthenticated && (
-        <AdminShell route={route} setRoute={setRoute} onLogout={handleLogout} corretor={corretor}>
-          {route === 'admin-dashboard' && (
-            <AdminDashboard
-              setRoute={setRoute}
-              properties={properties}
-              leads={leads}
-              setEditingId={setEditingId}
-              corretor={corretor}
-            />
-          )}
-          {route === 'admin-list' && (
-            <AdminPropertyList
-              setRoute={setRoute}
-              properties={properties}
-              setEditingId={setEditingId}
-              deleteProperty={deleteProperty}
-            />
-          )}
-          {route === 'admin-edit' && (
-            <AdminPropertyEdit
-              setRoute={setRoute}
-              properties={properties}
-              editingId={editingId}
-              saveProperty={saveProperty}
-            />
-          )}
-          {route === 'admin-leads' && (
-            <AdminLeads leads={leads} setLeadStatus={setLeadStatus} />
-          )}
-          {route === 'admin-perfil' && <AdminPerfil onUpdate={setCorretor} />}
-        </AdminShell>
-      )}
+      <Routes>
+        <Route path="/" element={
+          <HomeScreen setRoute={navigateTo} openProperty={openProperty} properties={properties} onSearch={handleSearch} corretor={corretor} />
+        } />
+        <Route path="/imoveis" element={
+          <ListScreen openProperty={openProperty} properties={properties} initialFilter={pendingFilter} />
+        } />
+        <Route path="/imovel/:id" element={
+          <DetailRouteWrapper setRoute={navigateTo} openProperty={openProperty} properties={properties} onLeadSubmit={onLeadSubmit} corretor={corretor} />
+        } />
+        <Route path="/sobre" element={<AboutScreen setRoute={navigateTo} corretor={corretor} />} />
+        <Route path="/contato" element={<ContactScreen onLeadSubmit={onLeadSubmit} corretor={corretor} />} />
+        <Route path="/privacidade" element={<PrivacyScreen setRoute={navigateTo} />} />
+        <Route path="/termos" element={<TermsScreen setRoute={navigateTo} />} />
+        <Route path="/admin/*" element={
+          !isAuthenticated
+            ? <AdminLogin onLogin={handleLogin} />
+            : <AdminShell route={adminRoute} setRoute={setAdminRoute} onLogout={handleLogout} corretor={corretor}>
+                {adminRoute === 'admin-dashboard' && (
+                  <AdminDashboard setRoute={setAdminRoute} properties={properties} leads={leads} setEditingId={setEditingId} corretor={corretor} />
+                )}
+                {adminRoute === 'admin-list' && (
+                  <AdminPropertyList setRoute={setAdminRoute} properties={properties} setEditingId={setEditingId} deleteProperty={deleteProperty} />
+                )}
+                {adminRoute === 'admin-edit' && (
+                  <AdminPropertyEdit setRoute={setAdminRoute} properties={properties} editingId={editingId} saveProperty={saveProperty} />
+                )}
+                {adminRoute === 'admin-leads' && (
+                  <AdminLeads leads={leads} setLeadStatus={setLeadStatus} />
+                )}
+                {adminRoute === 'admin-perfil' && <AdminPerfil onUpdate={setCorretor} />}
+              </AdminShell>
+        } />
+      </Routes>
 
       {!isAdmin && <Footer setRoute={navigateTo} corretor={corretor} />}
       {!isAdmin && <WhatsAppFAB corretor={corretor} />}
